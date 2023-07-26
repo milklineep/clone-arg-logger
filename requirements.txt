@@ -1,0 +1,5 @@
+python-socketio[client]
+discord_webhook
+
+# Only for sending messages
+discord.py
