@@ -1,5 +1,6 @@
 webhook_url = None
 leaderboard_webhook_url = None
+player_count_webhook_url = None
 
 game_url = 'https://clone-vpn-clicker.devmachine21.repl.co'
 

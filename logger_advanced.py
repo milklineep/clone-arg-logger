@@ -1,6 +1,6 @@
 import socketio
 from discord_webhook import DiscordWebhook, DiscordEmbed
-from secrets import webhook_url, game_url, leaderboard_webhook_url
+from secrets import webhook_url, game_url, leaderboard_webhook_url, player_count_webhook_url
 import datetime
 # import pytz
 
@@ -88,6 +88,38 @@ def leaderboard(data):
         embed.add_embed_field(name=field_name, value=money_string)
 
         rank += 1
+
+    embed.set_timestamp(dt)
+
+    webhook.add_embed(embed)
+
+    response = webhook.execute()
+
+@sio.on('PlayerCount')
+def player_count(data):
+    dt = datetime.datetime.now(datetime.timezone.utc)
+    isotime = dt.isoformat()
+
+    player_count = len(data)
+    data = sorted(data)
+    print('PlayerCount', isotime, player_count, data)
+    chat_compact = "PlayerCount: {}: {}: {}\n".format(isotime, player_count, data)
+
+    try:
+        f.write(chat_compact)
+        f.flush()
+    except UnicodeEncodeError:
+        pass
+
+    player_count_url = player_count_webhook_url if player_count_webhook_url is not None else webhook_url
+
+    webhook = DiscordWebhook(url=player_count_url, rate_limit_retry=True, content=chat_compact)
+
+    description = "The following players are online:\n"
+    for player in data:
+        description += "* {}\n".format(player)
+
+    embed = DiscordEmbed(title='{} players online'.format(player_count), description=description, color='0000ff')
 
     embed.set_timestamp(dt)
 
