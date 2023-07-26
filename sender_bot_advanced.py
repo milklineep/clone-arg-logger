@@ -8,6 +8,8 @@ from secrets import game_url, bot_token, guild_id, log_channel_id, priviliged_us
 import socketio
 import datetime
 import asyncio
+import traceback
+import time
 
 logins = {}
 
@@ -43,6 +45,10 @@ client = MyClient(intents=intents)
 async def on_ready():
     print(f'Logged in as {client.user} (ID: {client.user.id})')
     print('------')
+    channel = client.get_channel(log_channel_id)
+    isotime = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    await channel.send("Info: Bot started at <t:{}:F> {}".format(int(datetime.datetime.now().timestamp()), isotime))
+
 
 def prepare_message(temp_buffer):
     s = 'In the past 2 secs, received these messages in the categories chat, suspended, loggedIn:\n'
@@ -141,7 +147,18 @@ async def send(interaction: discord.Interaction, text_to_send: str):
 
     await interaction.response.defer(thinking=True, ephemeral=True)
 
-    sio.connect(game_url, namespaces='/')
+    log_channel = interaction.guild.get_channel(log_channel_id)
+
+    try:
+        sio.connect(game_url)
+    except socketio.exceptions.ConnectionError as e:
+        tb = traceback.format_exception(type(e), e, e.__traceback__)
+        traceback_string = "".join(tb)
+        print("send error:", traceback_string)
+        await interaction.followup.send("Failed to connect to the game.", ephemeral=True)
+        message_for_log_channel = "<@{}> tried sending message as {}. Internal error:\n{}".format(interaction.user.id, user_login, traceback_string)
+        await log_channel.send(message_for_log_channel, allowed_mentions=discord.AllowedMentions.none())
+        return
 
     sio.emit('chat', data)
 
@@ -149,13 +166,15 @@ async def send(interaction: discord.Interaction, text_to_send: str):
 
     sio.disconnect()
 
-    log_message = prepare_message(temp_buffer)
+    response_logs = prepare_message(temp_buffer)
+    error_info_string = " Error detected. Error: {}".format(login_error.get('message', '')) if login_error['data'] else ""
+    message_for_user = "Message sent as {}.{}\n{}".format(user_login, error_info_string, response_logs)
+    await interaction.followup.send(message_for_user, ephemeral=True)
 
-    await interaction.followup.send("Message sent as {}.{}\n{}".format(user_login, " Error detected. Error: {}".format(login_error.get('message', '')) if login_error['data'] else "", log_message), ephemeral=True)
+    is_error_string = " (error)" if login_error['data'] else ""
+    message_for_log_channel = "<@{}> tried sending message as {}{}".format(interaction.user.id, user_login, is_error_string)
+    await log_channel.send(message_for_log_channel, allowed_mentions=discord.AllowedMentions.none())
 
-    log_channel = interaction.guild.get_channel(log_channel_id)
-
-    await log_channel.send("<@{}> tried sending message as {}{}".format(interaction.user.id, user_login, " (error)" if login_error['data'] else ""), allowed_mentions=discord.AllowedMentions.none())
 
 @client.tree.command()
 @app_commands.rename(user_login='login')
@@ -233,7 +252,18 @@ async def login(interaction: discord.Interaction, user_login: str, user_password
 
     await interaction.response.defer(thinking=True, ephemeral=True)
 
-    sio.connect(game_url, namespaces='/')
+    log_channel = interaction.guild.get_channel(log_channel_id)
+
+    try:
+        sio.connect(game_url)
+    except socketio.exceptions.ConnectionError as e:
+        tb = traceback.format_exception(type(e), e, e.__traceback__)
+        traceback_string = "".join(tb)
+        print("login error:", traceback_string)
+        await interaction.followup.send("Failed to connect to the game.", ephemeral=True)
+        message_for_log_channel = "<@{}> tried logging in as {}. Internal error: {}".format(interaction.user.id, user_login, traceback_string)
+        await log_channel.send(message_for_log_channel, allowed_mentions=discord.AllowedMentions.none())
+        return
 
     await asyncio.sleep(2)
 
@@ -244,13 +274,14 @@ async def login(interaction: discord.Interaction, user_login: str, user_password
     if not login_error['data']:
         logins[interaction.user.id] = {'username': user_login, 'password': user_password}
 
-    log_message = prepare_message(temp_buffer)
+    response_logs = prepare_message(temp_buffer)
+    error_info_string = " Detected error - credentials not saved. Error: {}".format(login_error.get('message', '')) if login_error['data'] else ""
+    message_for_user = "Tried logging in as {}.{}\n{}".format(user_login, error_info_string, response_logs)
+    await interaction.followup.send(message_for_user, ephemeral=True)
 
-    await interaction.followup.send("Tried logging in as {}.{}\n{}".format(user_login, " Detected error - credentials not saved. Error: {}".format(login_error.get('message', '')) if login_error['data'] else "", log_message), ephemeral=True)
-
-    log_channel = interaction.guild.get_channel(log_channel_id)
-
-    await log_channel.send("<@{}> tried logging in as {}{}".format(interaction.user.id, user_login, " (error)" if login_error['data'] else ""), allowed_mentions=discord.AllowedMentions.none())
+    is_error_string = " (error)" if login_error['data'] else ""
+    message_for_log_channel = "<@{}> tried logging in as {}{}".format(interaction.user.id, user_login, is_error_string)
+    await log_channel.send(message_for_log_channel, allowed_mentions=discord.AllowedMentions.none())
 
 
 @client.tree.command()
