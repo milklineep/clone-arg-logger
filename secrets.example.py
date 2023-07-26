@@ -2,7 +2,7 @@ webhook_url = None
 leaderboard_webhook_url = None
 player_count_webhook_url = None
 
-game_url = 'https://clone-vpn-clicker.devmachine21.repl.co'
+game_url = 'https://clone-vpn-clicker.progbot.repl.co'
 
 # stop here if you only need to log messages, not send messages on your behalf
 
