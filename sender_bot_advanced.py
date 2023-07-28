@@ -153,7 +153,7 @@ async def send(interaction: discord.Interaction, text_to_send: str):
     log_channel = interaction.guild.get_channel(log_channel_id)
 
     try:
-        sio.connect(game_url)
+        sio.connect(game_url, namespaces='/')
     except socketio.exceptions.ConnectionError as e:
         tb = traceback.format_exception(type(e), e, e.__traceback__)
         traceback_string = "".join(tb)
@@ -284,7 +284,7 @@ async def login(interaction: discord.Interaction, user_login: str, user_password
     log_channel = interaction.guild.get_channel(log_channel_id)
 
     try:
-        sio.connect(game_url)
+        sio.connect(game_url, namespaces='/')
     except socketio.exceptions.ConnectionError as e:
         tb = traceback.format_exception(type(e), e, e.__traceback__)
         traceback_string = "".join(tb)
