@@ -33,7 +33,7 @@ def on_message(data):
     # if rate_limit_retry is True then in the event that you are being rate 
     # limited by Discord your webhook will automatically be sent once the 
     # rate limit has been lifted
-    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=chat_compact)
+    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=chat_compact, allowed_mentions={"parse": []})
 
     embed = DiscordEmbed(title='', description=text, color=hex_color)
     embed.set_author(name=author)
