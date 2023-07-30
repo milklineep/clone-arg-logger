@@ -1,6 +1,6 @@
 import socketio
 from discord_webhook import DiscordWebhook
-from secrets import webhook_url, game_url
+from secrets_logger import webhook_url, game_url
 import datetime
 
 f = open('message.log', 'a')

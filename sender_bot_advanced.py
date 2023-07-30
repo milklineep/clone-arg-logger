@@ -4,7 +4,7 @@ import os, sys
 
 import discord
 from discord import app_commands
-from secrets import game_url, bot_token, guild_id, log_channel_id, priviliged_users_ids_list
+from secrets_logger import game_url, bot_token, guild_id, log_channel_id, priviliged_users_ids_list
 import socketio
 import datetime
 import asyncio

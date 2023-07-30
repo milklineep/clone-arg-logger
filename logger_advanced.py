@@ -1,6 +1,6 @@
 import socketio
 from discord_webhook import DiscordWebhook, DiscordEmbed
-from secrets import webhook_url, game_url, leaderboard_webhook_url, player_count_webhook_url, logger_login, logger_password
+from secrets_logger import webhook_url, game_url, leaderboard_webhook_url, player_count_webhook_url, logger_login, logger_password
 import datetime
 # import pytz
 

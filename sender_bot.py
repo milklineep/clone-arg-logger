@@ -2,7 +2,7 @@ import os, sys
 
 import discord
 from discord import app_commands
-from secrets import game_url, bot_token, chat_login, chat_password
+from secrets_logger import game_url, bot_token, chat_login, chat_password
 import socketio
 
 sio = socketio.Client()
