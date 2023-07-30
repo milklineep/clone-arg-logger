@@ -51,7 +51,7 @@ async def on_ready():
 
 
 def prepare_message(temp_buffer):
-    s = 'In the past 2 secs, received these messages in the categories chat, suspended, loggedIn:\n'
+    s = 'In the past 3 secs, received these messages in the categories chat, suspended, loggedIn:\n'
     for msg in temp_buffer:
         s += "{}\n".format(msg)
     return s
@@ -139,7 +139,6 @@ async def send(interaction: discord.Interaction, text_to_send: str):
         else:
             login_status['logged_in'] = True
 
-
     if len(text_to_send) < 1: 
         await interaction.response.send_message("Text too short.")
         return
@@ -176,9 +175,16 @@ async def send(interaction: discord.Interaction, text_to_send: str):
         print("logged_in after 2s, chatting")
         sent_after = 2
         sio.emit('chat', data)
-    elif sent_after == 0:
-        print("not logged_in after 2s, chatting anyway")
+
+    await asyncio.sleep(1)
+
+    if sent_after == 0 and login_status['logged_in']:
+        print("logged_in after 3s, chatting")
         sent_after = 3
+        sio.emit('chat', data)
+    elif sent_after == 0:
+        print("not logged_in after 3s, chatting anyway")
+        sent_after = 4
         sio.emit('chat', data)
 
     sio.disconnect()
@@ -187,20 +193,20 @@ async def send(interaction: discord.Interaction, text_to_send: str):
     error_info_string = ''
     if login_status['error']:
         error_info_string = "Error detected. Error: {}".format(login_status.get('message', ''))
-    elif sent_after != 3:
+    elif sent_after != 4:
         error_info_string = "Sent after {} seconds.".format(sent_after)
-    elif sent_after == 3:
-        error_info_string = "Sent after 2 seconds without awaiting login packet."
+    elif sent_after == 4:
+        error_info_string = "Sent after 3 seconds without awaiting login packet."
     message_for_user = "Message sent as {}. {}\n{}".format(user_login, error_info_string, response_logs)
     await interaction.followup.send(message_for_user, ephemeral=True)
 
     is_error_string = ''
     if login_status['error']:
         is_error_string = "(error)"
-    elif sent_after != 3:
+    elif sent_after != 4:
         is_error_string = "({}s)".format(sent_after)
-    elif sent_after == 3:
-        is_error_string = "(2s, no_response)."
+    elif sent_after == 4:
+        is_error_string = "(3s, no_response)."
     message_for_log_channel = "<@{}> tried sending message as {} {}".format(interaction.user.id, user_login, is_error_string)
     await log_channel.send(message_for_log_channel, allowed_mentions=discord.AllowedMentions.none())
 
