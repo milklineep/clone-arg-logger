@@ -1,6 +1,6 @@
 import socketio
 from discord_webhook import DiscordWebhook, DiscordEmbed
-from secrets import webhook_url, game_url, leaderboard_webhook_url, player_count_webhook_url
+from secrets import webhook_url, game_url, leaderboard_webhook_url, player_count_webhook_url, logger_login, logger_password
 import datetime
 # import pytz
 
@@ -29,6 +29,8 @@ def on_message(data):
     else: hex_color = hex_color[1:]
     author = data['sender']
     text = data['message']
+
+    webhook_text = "{}\n{}".format(chat_compact, text)
 
     # if rate_limit_retry is True then in the event that you are being rate 
     # limited by Discord your webhook will automatically be sent once the 
@@ -127,20 +129,62 @@ def player_count(data):
 
     response = webhook.execute()
 
-# def login():
-#     if chat_login is not None and chat_password is not None:
-#         user = {
-#             'username': chat_login,
-#             'password': chat_password
-#         }
+@sio.on('hackInProgress')
+def hack_in_progress(data):
+    dt = datetime.datetime.now(datetime.timezone.utc)
+    isotime = dt.isoformat()
+
+    print('hackInProgress', isotime, data)
+    chat_compact = "hackInProgress: {}: {}\n".format(isotime, data)
+
+    try:
+        f.write(chat_compact)
+        f.flush()
+    except UnicodeEncodeError:
+        pass
+
+    webhook = DiscordWebhook(url=webhook_url, rate_limit_retry=True, content=chat_compact)
+
+    hacker = data.get('hacker', '')
+    victim = data.get('victim', '')
+    money = int(data.get('money', ''))
+    money_string = '${:,}'.format(money)
+
+    text_status = 'succeeded'
+    description = ''
+    if data.get('success', True):
+        description = '{} hacked {} for {}'.format(hacker, victim, money_string)
+    else:
+        text_status = 'failed'
+        description = '{} was blocked by {}'.format(hacker, victim)
+
+    embed = DiscordEmbed(title='Hack {}'.format(text_status), description=description, color='ff0000')
+    embed.set_author(name='Game')
+    embed.set_timestamp(dt)
+
+    webhook.add_embed(embed)
+
+    response = webhook.execute()
+
+
+def maybe_login():
+    if logger_login is not None and logger_password is not None:
+        print("Logging in ...")
+        user = {
+            'username': logger_login,
+            'password': logger_password
+        }
+        sio.emit('login', data=user)
+    else:
+        print("No credentials provided, remaining anonymous")
 
 @sio.event
 def connect():
     print("I'm connected!")
-    # try:
-    #     login()
-    # except:
-    #     sio.disconnect()
+    try:
+        maybe_login()
+    except:
+        sio.disconnect()
 
 @sio.event
 def connect_error(data):

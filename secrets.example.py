@@ -1,8 +1,13 @@
 webhook_url = None
+# only for advanced logger
 leaderboard_webhook_url = None
 player_count_webhook_url = None
 
 game_url = 'https://clone-vpn-clicker.progbot.repl.co'
+
+# if you need to log in (special messages from the devs) put credentials here
+logger_login = None
+logger_password = None
 
 # stop here if you only need to log messages, not send messages on your behalf
 
